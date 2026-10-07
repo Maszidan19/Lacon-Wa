@@ -1,0 +1,11 @@
+{
+  "_catatan": "Id sheet dan folder Drive. nama_akun diisi SESUDAH tiap brand login, lewat 'python wa.py akun <brand>' - jangan ditebak.",
+
+  "sheet_id": "1ur70flXaJ0PCMsPncmbsUs4gRraptkSt3Om-gk3F4kE",
+  "sheet_nama": "Jadwal Up Konten",
+
+  "drive_folder_id": "14z9kqoRbiU_gFIOGskDYUbCs3FTYbsOJ",
+  "drive_nama": "creative-makers",
+
+  "nama_akun": {}
+}

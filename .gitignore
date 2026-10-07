@@ -1,0 +1,18 @@
+# Kunci Google. JANGAN PERNAH masuk repo.
+.secrets/
+
+# Profil Chrome - berisi SESI LOGIN WHATSAPP tiap brand. Kalau ini bocor,
+# orang lain bisa memposting Status atas nama brand.
+.chrome/
+
+# Hasil unduhan dari Drive, bisa ratusan MB
+unduhan/
+
+# Indeks Drive, disusun ulang sendiri lewat 'python wa.py indeks'
+indeks_drive.json
+
+# Catatan jalan
+riwayat.log
+
+__pycache__/
+*.pyc
