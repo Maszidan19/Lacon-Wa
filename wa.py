@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """lacon-wa - Status WhatsApp otomatis untuk Story Motion dan Daily Insight.
 
+    python wa.py siap                          periksa kesiapan, tidak mengubah apa pun
     python wa.py indeks                        susun ulang indeks Drive
     python wa.py unduh <tgl> [--brand a,b] [--tulis]
     python wa.py login <brand>                 buka jendela untuk scan QR
@@ -42,6 +43,87 @@ def daftar_brand(teks):
     if asing:
         inti.gagal("Brand tidak dikenal: %s" % ", ".join(sorted(asing)))
     return nama
+
+
+def cmd_siap():
+    """Periksa alat ini siap dipakai atau belum. Tidak mengubah apa pun.
+
+    Dijalankan SEBELUM pemakaian pertama oleh tim baru. Empat hal yang harus
+    DITANYAKAN ke tim, bukan ditebak - arahan user 7 Oktober 2026:
+
+        1  login WhatsApp tiap brand        mereka yang scan QR
+        2  jam tayangnya                    tim CS yang menetapkan
+        3  link folder Drive berkasnya      belum tentu sama dengan punya kita
+        4  link sheet jadwal kontennya      belum tentu sama dengan punya kita
+
+    Nilai di config.json sekarang DIAMBIL DARI PROYEK LACON. Kalau tim
+    memakai sheet atau folder yang lain, nilai itu salah dan harus diganti.
+    """
+    import datetime as dt
+    cfg = inti.baca_config()
+    kurang = []
+
+    inti.info("=== 1. Sumber konten ===")
+    sheets, drive = inti.layanan()
+    sid = cfg.get("sheet_id")
+    try:
+        m = sheets.spreadsheets().get(
+            spreadsheetId=sid, fields="properties/title,sheets/properties/title").execute()
+        tabs = [s["properties"]["title"] for s in m["sheets"]]
+        inti.info("  sheet  : %s" % m["properties"]["title"])
+        inti.info("           %d tab: %s" % (len(tabs), ", ".join(tabs)))
+    except Exception as e:
+        inti.info("  sheet  : TIDAK BISA DIBACA - %s" % str(e)[:70])
+        kurang.append("sheet_id di config.json - minta link sheetnya ke tim")
+
+    fid = cfg.get("drive_folder_id")
+    try:
+        f = drive.files().get(fileId=fid, fields="name",
+                              supportsAllDrives=True).execute()
+        inti.info("  Drive  : %s" % f["name"])
+    except Exception as e:
+        inti.info("  Drive  : TIDAK BISA DIBACA - %s" % str(e)[:70])
+        kurang.append("drive_folder_id di config.json - minta link foldernya ke tim")
+
+    inti.info("\n=== 2. Indeks Drive ===")
+    if os.path.isfile(inti.INDEKS):
+        import json
+        n = len(json.load(open(inti.INDEKS, encoding="utf-8")))
+        umur = (dt.datetime.now()
+                - dt.datetime.fromtimestamp(os.path.getmtime(inti.INDEKS))).days
+        inti.info("  %d video, disusun %d hari lalu" % (n, umur))
+        if umur > 7:
+            inti.info("  SUDAH TUA. Indeks basi menyamar jadi 'konten tidak "
+                      "ketemu' - susun ulang: python wa.py indeks")
+    else:
+        inti.info("  BELUM ADA - jalankan: python wa.py indeks")
+        kurang.append("indeks Drive")
+
+    inti.info("\n=== 3. Login WhatsApp per brand ===")
+    nama = cfg.get("nama_akun") or {}
+    belum = []
+    for b in sorted(inti.AWALAN):
+        p = inti.profil_brand(b)
+        ada = os.path.isdir(p) and os.listdir(p)
+        tanda = "profil ada" if ada else "BELUM LOGIN"
+        inti.info("  %-10s %-12s %s" % (b, tanda, nama.get(b, "")))
+        if not ada:
+            belum.append(b)
+    if belum:
+        kurang.append("login %d brand: %s" % (len(belum), ", ".join(belum)))
+
+    inti.info("\n=== 4. Jam tayang ===")
+    inti.info("  TIDAK ditentukan alat ini. Tanya tim CS, lalu jalankan")
+    inti.info("  'kirim' pada jam yang mereka tetapkan.")
+
+    inti.info("\n=== Kesimpulan ===")
+    if kurang:
+        inti.info("BELUM SIAP. Yang kurang:")
+        for k in kurang:
+            inti.info("  - %s" % k)
+    else:
+        inti.info("Siap dipakai. Tetap jalankan 'akun <brand>' sekali untuk")
+        inti.info("tiap brand dan BACA nama akunnya sebelum kirim pertama.")
 
 
 def folder_hari(hari, argv):
@@ -144,7 +226,9 @@ def main():
         print(__doc__)
         return
     p = a[1]
-    if p == "indeks":
+    if p == "siap":
+        cmd_siap()
+    elif p == "indeks":
         konten.susun_indeks()
     elif p == "unduh" and len(a) > 2:
         konten.unduh(inti.baca_tanggal_perintah(a[2]),
